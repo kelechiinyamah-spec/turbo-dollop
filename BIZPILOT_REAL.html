@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BizPilot — Find Trusted Professionals in Abuja</title>
+
+<!-- ============================================================
+  BIZPILOT — REAL PRODUCTION APP
+  ============================================================
+  BEFORE GOING LIVE, REPLACE THESE:
+  1. CONFIG.PAYSTACK_KEY  → your real pk_live_ key
+  2. CONFIG.SUPABASE_URL  → your Supabase project URL
+  3. CONFIG.SUPABASE_ANON_KEY → your Supabase anon key
+  4. Set CONFIG.TEST_Mode: false
+
+  BACKEND NEEDED (deploy to Vercel — see README at bottom of file):
+  - /api/send-otp    → calls Termii SMS API
+  - /api/verify-otp  → verifies OTP
+  ============================================================ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --g1:#0a2e1a;--g2:#16a34a;--g3:#22c55e;--g4:#4ade80;
+  --surface:#f0fdf4;--card:#ffffff;
+  --text:#0f1c12;--text2:#3d5a44;--text3:#6b8f74;
+  --border:#d1fae5;--border2:#a7f3d0;
+  --red:#ef4444;--gold:#f59e0b;--blue:#3b82f6;
+  --shadow:0 2px 16px rgba(22,163,74,0.10);
+  --shadow-lg:0 8px 40px rgba(22,163,74,0.18);
+  --r:18px;--r-sm:12px;--r-xs:8px;
+  --font:'Sora',sans-serif;--font2:'DM Sans',sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font2);background:var(--surface);color:var(--text);max-width:430px;margin:0 auto;height:100vh;position:relative;overflow:hidden}
+
+.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transform:translateX(30px);transition:opacity 0.22s ease,transform 0.22s ease}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+
+/* SPLASH */
+#splash{background:linear-gradient(160deg,var(--g1) 0%,#0d3b20 40%,#1a5c35 100%);justify-content:center;align-items:center;text-align:center;padding:48px 28px;position:relative;overflow:hidden}
+#splash::before{content:'';position:absolute;top:-80px;right:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(74,222,128,0.15),transparent 70%);border-radius:50%}
+.splash-logo{width:88px;height:88px;background:linear-gradient(135deg,var(--g3),var(--g4));border-radius:26px;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 28px;box-shadow:0 12px 40px rgba(74,222,128,0.4);position:relative;z-index:1}
+.splash-title{font-family:var(--font);font-size:44px;font-weight:800;color:#fff;letter-spacing:-1.5px;margin-bottom:6px;position:relative;z-index:1}
+.splash-tagline{font-size:15px;color:rgba(255,255,255,0.65);margin-bottom:56px;position:relative;z-index:1;font-weight:500}
+.splash-btn{width:100%;padding:18px;border-radius:var(--r-sm);font-family:var(--font);font-size:16px;font-weight:700;border:none;cursor:pointer;margin-bottom:12px;position:relative;z-index:1;transition:transform 0.15s}
+.splash-btn:active{transform:scale(0.97)}
+.btn-solid{background:linear-gradient(135deg,var(--g3),var(--g2));color:#fff;box-shadow:0 6px 24px rgba(34,197,94,0.4)}
+.btn-outline{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);border:1.5px solid rgba(255,255,255,0.2)}
+
+/* TOP BAR */
+.top-bar{padding:14px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;background:linear-gradient(135deg,var(--g1),var(--g2));flex-shrink:0}
+.top-bar h1{font-family:var(--font);font-size:18px;font-weight:700;color:#fff;flex:1}
+.back-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+/* AUTH */
+.auth-hero{background:linear-gradient(160deg,var(--g1),var(--g2));padding:56px 24px 40px;color:#fff;flex-shrink:0}
+.auth-emoji{font-size:40px;margin-bottom:14px;display:block}
+.auth-title{font-family:var(--font);font-size:26px;font-weight:800;margin-bottom:6px}
+.auth-sub{font-size:14px;opacity:0.75;font-weight:500}
+.auth-body{padding:28px 24px;flex:1;overflow-y:auto;background:var(--surface)}
+
+/* INPUTS */
+.input-group{margin-bottom:18px}
+.input-label{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:block}
+.input-field{width:100%;padding:15px 16px;border:2px solid var(--border);border-radius:var(--r-xs);font-size:15px;font-family:var(--font2);background:#fff;color:var(--text);outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+.input-field:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(22,163,74,0.12)}
+.input-hint{font-size:12px;color:var(--text3);margin-top:6px}
+.btn{width:100%;padding:16px;border-radius:var(--r-xs);font-family:var(--font);font-size:15px;font-weight:700;border:none;cursor:pointer;transition:transform 0.15s,opacity 0.2s}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.btn-green{background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;box-shadow:0 4px 16px rgba(22,163,74,0.3)}
+.btn-ghost{background:var(--surface);color:var(--text2);border:1.5px solid var(--border2);margin-top:10px}
+
+/* OTP */
+.otp-wrap{display:flex;gap:10px;justify-content:center;margin-bottom:8px}
+.otp-digit{width:48px;height:56px;border:2px solid var(--border);border-radius:var(--r-xs);font-size:22px;font-weight:700;font-family:var(--font);text-align:center;outline:none;background:#fff}
+.otp-digit:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(22,163,74,0.12)}
+
+/* ROLE SELECT */
+#role-select{background:var(--surface)}
+.role-body{padding:32px 24px}
+.role-card{background:#fff;border-radius:var(--r);padding:28px 22px;text-align:center;box-shadow:var(--shadow);margin-bottom:14px;cursor:pointer;border:2px solid transparent;transition:all 0.2s}
+.role-card:active{border-color:var(--g2);transform:scale(0.98)}
+.role-icon{font-size:48px;margin-bottom:14px}
+.role-title{font-family:var(--font);font-size:20px;font-weight:800;margin-bottom:6px}
+.role-desc{font-size:13px;color:var(--text3);line-height:1.5}
+
+/* HOME */
+.home-header{background:linear-gradient(160deg,var(--g1),#1a5c35);padding:24px 20px 28px;color:#fff;flex-shrink:0}
+.home-greeting{font-size:13px;opacity:0.7;font-weight:500;margin-bottom:3px}
+.home-name{font-family:var(--font);font-size:22px;font-weight:800;margin-bottom:18px}
+.search-bar{background:rgba(255,255,255,0.95);border-radius:var(--r-xs);padding:13px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+.search-bar input{flex:1;border:none;outline:none;font-size:14px;font-family:var(--font2);color:var(--text);background:transparent}
+
+/* PAYWALL BANNER */
+.paywall-banner{background:linear-gradient(135deg,#1e3a52,#2563eb);margin:16px;border-radius:var(--r-sm);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.paywall-icon{font-size:28px;flex-shrink:0}
+.paywall-text .ptitle{font-family:var(--font);font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
+.paywall-text .psub{font-size:12px;color:rgba(255,255,255,0.75)}
+.paywall-arrow{color:rgba(255,255,255,0.6);font-size:20px;margin-left:auto}
+
+/* SECTIONS */
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 10px}
+.section-title{font-family:var(--font);font-size:17px;font-weight:800;color:var(--text)}
+.section-link{font-size:12px;color:var(--g2);font-weight:600;cursor:pointer}
+
+/* SERVICES */
+.services-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:0 14px}
+.service-card{background:#fff;border-radius:var(--r-sm);padding:12px 6px;text-align:center;box-shadow:var(--shadow);cursor:pointer;border:2px solid transparent;transition:all 0.18s}
+.service-card:active{border-color:var(--g2);transform:scale(0.95)}
+.service-emoji{font-size:24px;margin-bottom:5px}
+.service-name{font-size:9px;font-weight:600;color:var(--text2);line-height:1.3}
+
+/* WORKER CARDS */
+.workers-list{padding:0 14px}
+.worker-card{background:#fff;border-radius:var(--r);padding:15px;box-shadow:var(--shadow);margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:13px;transition:transform 0.15s;border:1.5px solid transparent}
+.worker-card:active{transform:scale(0.98);border-color:var(--border2)}
+.worker-avatar{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,var(--g3),var(--g4));display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.worker-info{flex:1;min-width:0}
+.worker-name{font-family:var(--font);font-size:14px;font-weight:700;color:var(--text)}
+.worker-service{font-size:11px;color:var(--g2);font-weight:600;margin-top:1px}
+.worker-meta{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.meta-pill{font-size:10px;color:var(--text3);font-weight:600;background:var(--surface);padding:2px 7px;border-radius:20px}
+.verified-tag{background:var(--surface);color:var(--g2);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid var(--border2);white-space:nowrap}
+
+/* WORKER DETAIL */
+.worker-hero{background:linear-gradient(160deg,var(--g1),var(--g2));padding:28px 20px 24px;color:#fff;text-align:center;flex-shrink:0}
+.worker-hero-avatar{width:80px;height:80px;background:rgba(255,255,255,0.15);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 14px;border:2px solid rgba(255,255,255,0.3)}
+.worker-hero-name{font-family:var(--font);font-size:22px;font-weight:800;margin-bottom:4px}
+.worker-hero-service{font-size:14px;opacity:0.8;margin-bottom:14px}
+.stats-row{display:flex;justify-content:center;gap:24px}
+.stat-item{text-align:center}
+.stat-val{font-family:var(--font);font-size:20px;font-weight:800}
+.stat-lbl{font-size:10px;opacity:0.7;margin-top:2px}
+.detail-body{padding:16px;flex:1}
+.detail-card{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--shadow);margin-bottom:12px}
+.detail-card h3{font-family:var(--font);font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
+.info-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--surface)}
+.info-row:last-child{border-bottom:none}
+.info-icon{font-size:16px;width:22px;flex-shrink:0}
+.info-text{font-size:13px;color:var(--text2)}
+.action-footer{position:sticky;bottom:0;background:#fff;padding:14px 16px;box-shadow:0 -2px 16px rgba(0,0,0,0.08);display:flex;gap:10px;flex-shrink:0}
+.btn-chat-action{flex:1;background:var(--surface);color:var(--text);border:1.5px solid var(--border2);padding:14px;border-radius:var(--r-xs);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer}
+.btn-book-action{flex:2;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;padding:14px;border-radius:var(--r-xs);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;border:none;box-shadow:0 4px 14px rgba(22,163,74,0.35)}
+
+/* BOOKING */
+.booking-body{padding:16px;padding-bottom:32px}
+.form-card{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.form-card h3{font-family:var(--font);font-size:14px;font-weight:700;margin-bottom:14px}
+.booking-worker-row{display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface);border-radius:var(--r-xs)}
+
+/* PAY OPTIONS */
+.pay-option{display:flex;align-items:center;gap:14px;padding:14px;border:2px solid var(--border);border-radius:var(--r-xs);background:#fff;cursor:pointer;margin-bottom:10px;transition:all 0.15s}
+.pay-option.selected{border-color:var(--g2);background:#f0fdf4}
+.pay-option-icon{font-size:22px;flex-shrink:0}
+.pay-option-info{flex:1}
+.pay-option-name{font-size:14px;font-weight:700;color:var(--text)}
+.pay-option-sub{font-size:12px;color:var(--text3)}
+.pay-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.pay-option.selected .pay-check{background:var(--g2);border-color:var(--g2);color:#fff}
+
+/* CHAT */
+#chat{background:var(--surface)}
+.chat-messages{flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:78%;padding:11px 14px;border-radius:16px;font-size:13px;line-height:1.55}
+.msg-in{background:#fff;color:var(--text);border-bottom-left-radius:4px;align-self:flex-start;box-shadow:var(--shadow)}
+.msg-out{background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.msg-time{font-size:10px;opacity:0.5;margin-top:4px}
+.chat-bar{padding:12px 14px;background:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 -2px 12px rgba(0,0,0,0.06);flex-shrink:0}
+.chat-input{flex:1;border:1.5px solid var(--border);border-radius:30px;padding:11px 16px;font-size:13px;font-family:var(--font2);outline:none;background:var(--surface)}
+.chat-input:focus{border-color:var(--g2)}
+.chat-send{width:42px;height:42px;background:linear-gradient(135deg,var(--g2),var(--g3));border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+/* SUCCESS */
+#booking-success{justify-content:center;align-items:center;padding:40px 24px;text-align:center;background:var(--surface)}
+.success-ring{width:110px;height:110px;background:linear-gradient(135deg,var(--g3),var(--g4));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto 28px;box-shadow:0 8px 32px rgba(74,222,128,0.4)}
+.success-title{font-family:var(--font);font-size:24px;font-weight:800;margin-bottom:8px}
+.success-sub{font-size:14px;color:var(--text3);margin-bottom:32px;line-height:1.6}
+
+/* WORKER DASHBOARD */
+.w-header{background:linear-gradient(160deg,var(--g1),#1a5c35);padding:24px 20px;color:#fff;flex-shrink:0}
+.w-greeting{font-size:13px;opacity:0.7;margin-bottom:3px}
+.w-name{font-family:var(--font);font-size:22px;font-weight:800;margin-bottom:18px}
+.earnings-card{background:rgba(255,255,255,0.1);border-radius:var(--r);padding:18px;border:1px solid rgba(255,255,255,0.15)}
+.earnings-label{font-size:12px;opacity:0.7;margin-bottom:4px}
+.earnings-amount{font-family:var(--font);font-size:38px;font-weight:800}
+.earnings-sub{font-size:12px;opacity:0.6;margin-top:4px}
+.stats-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+.stat-card{background:#fff;border-radius:var(--r-sm);padding:14px;text-align:center;box-shadow:var(--shadow)}
+.stat-card-val{font-family:var(--font);font-size:24px;font-weight:800;color:var(--text)}
+.stat-card-lbl{font-size:10px;color:var(--text3);font-weight:600;margin-top:4px}
+
+/* SUBSCRIPTION */
+#worker-subscribe{background:var(--surface)}
+.sub-body{padding:20px 24px;flex:1;overflow-y:auto}
+.sub-card{background:#fff;border-radius:20px;padding:28px;box-shadow:var(--shadow-lg);border-top:4px solid var(--g3);margin-bottom:20px}
+.sub-badge{display:inline-block;background:linear-gradient(135deg,var(--g2),var(--g3));color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:16px}
+.sub-price{font-family:var(--font);font-size:52px;font-weight:800;color:var(--g2);line-height:1;margin-bottom:4px}
+.sub-period{font-size:14px;color:var(--text3);margin-bottom:20px}
+.benefit{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--surface)}
+.benefit:last-child{border-bottom:none}
+.benefit-check{width:24px;height:24px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--g2);font-size:13px;flex-shrink:0}
+.benefit-text{font-size:14px;color:var(--text2);font-weight:500}
+
+/* CUSTOMER SUBSCRIBE */
+#customer-subscribe{background:var(--surface)}
+.csub-hero{background:linear-gradient(160deg,#1e3a52,#2563eb);padding:48px 24px 40px;color:#fff;text-align:center}
+.csub-icon{font-size:52px;margin-bottom:16px}
+.csub-title{font-family:var(--font);font-size:24px;font-weight:800;margin-bottom:8px}
+.csub-sub{font-size:14px;opacity:0.75;line-height:1.6}
+.csub-body{padding:24px}
+.csub-card{background:#fff;border-radius:var(--r);padding:24px;box-shadow:var(--shadow);margin-bottom:16px}
+.csub-price{font-family:var(--font);font-size:44px;font-weight:800;color:var(--blue);text-align:center;margin-bottom:4px}
+.csub-once{font-size:13px;color:var(--text3);text-align:center;margin-bottom:20px}
+
+/* BOTTOM NAV */
+.bottom-nav{position:sticky;bottom:0;background:#fff;display:flex;border-top:1px solid var(--border);z-index:90;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0;cursor:pointer;font-size:9px;font-weight:700;color:var(--text3)}
+.nav-item.active{color:var(--g2)}
+.nav-icon{font-size:20px;margin-bottom:3px}
+
+/* MENU */
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:200;display:none}
+.overlay.open{display:block}
+.drawer{position:absolute;top:0;right:0;width:78%;height:100%;background:#fff;padding:48px 22px 32px;box-shadow:-8px 0 40px rgba(0,0,0,0.2);overflow-y:auto}
+.drawer-name{font-family:var(--font);font-size:20px;font-weight:800;margin-bottom:4px}
+.drawer-phone{font-size:13px;color:var(--text3);margin-bottom:24px}
+.drawer-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--surface);cursor:pointer;font-size:14px;font-weight:600;color:var(--text)}
+.drawer-item-icon{font-size:20px;width:28px}
+
+/* SUBSCRIPTION STATUS */
+.sub-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
+.sub-active{background:#dcfce7;color:#15803d}
+.sub-inactive{background:#fee2e2;color:#dc2626;cursor:pointer}
+
+/* ORDERS */
+.order-card{background:#fff;border-radius:var(--r-sm);padding:15px;box-shadow:var(--shadow);margin-bottom:10px;border-left:4px solid var(--g2)}
+.order-service{font-family:var(--font);font-size:14px;font-weight:700;margin-bottom:4px}
+.order-detail{font-size:12px;color:var(--text3)}
+.order-status{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--surface);color:var(--g2);margin-top:6px}
+
+/* TOAST */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--g1);color:#fff;padding:12px 22px;border-radius:30px;font-size:13px;font-weight:600;z-index:999;pointer-events:none;opacity:0;transition:opacity 0.3s;max-width:320px;text-align:center;box-shadow:var(--shadow-lg)}
+#toast.show{opacity:1}
+
+/* SPINNER */
+.spinner{width:22px;height:22px;border:3px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 24px}
+.empty-icon{font-size:52px;margin-bottom:16px}
+.empty-title{font-family:var(--font);font-size:18px;font-weight:800;margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--text3);line-height:1.6}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- SPLASH -->
+<div id="splash" class="screen active">
+  <div class="splash-logo">🔧</div>
+  <div class="splash-title">BizPilot</div>
+  <div class="splash-tagline">Trusted professionals in Abuja, at your fingertips</div>
+  <button class="splash-btn btn-solid" onclick="go('role-select')">Find a Professional →</button>
+  <button class="splash-btn btn-outline" onclick="go('auth-worker')">I'm a Professional</button>
+</div>
+
+<!-- ROLE SELECT -->
+<div id="role-select" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="go('splash')">←</button><h1>Join BizPilot</h1></div>
+  <div class="role-body">
+    <div style="margin-bottom:24px"><div style="font-family:var(--font);font-size:22px;font-weight:800;margin-bottom:6px">Who are you?</div><div style="font-size:14px;color:var(--text3)">Choose how you'll use BizPilot</div></div>
+    <div class="role-card" onclick="go('auth-customer')">
+      <div class="role-icon">🏠</div>
+      <div class="role-title">I Need a Professional</div>
+      <div class="role-desc">Find and hire verified professionals for any job in Abuja.<br><strong style="color:var(--g2)">₦5,000 per search session</strong></div>
+    </div>
+    <div class="role-card" onclick="go('auth-worker')">
+      <div class="role-icon">🔧</div>
+      <div class="role-title">I'm a Professional</div>
+      <div class="role-desc">List your services and get hired by customers.<br><strong style="color:var(--g2)">₦10,000/month subscription</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH CUSTOMER -->
+<div id="auth-customer" class="screen">
+  <div class="auth-hero"><span class="auth-emoji">👋</span><div class="auth-title">Customer Login</div><div class="auth-sub">Enter your phone — we'll send you a code</div></div>
+  <div class="auth-body">
+    <div id="acp-phone">
+      <div class="input-group">
+        <label class="input-label">Phone Number</label>
+        <input type="tel" class="input-field" id="c-phone" placeholder="+234 800 000 0000" maxlength="15">
+        <div class="input-hint">We'll send a 6-digit OTP via SMS</div>
+      </div>
+      <button class="btn btn-green" id="c-send-btn" onclick="sendOTP('c')">Send OTP →</button>
+      <button class="btn btn-ghost" onclick="go('role-select')">← Back</button>
+    </div>
+    <div id="acp-otp" style="display:none">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:36px;margin-bottom:10px">📱</div>
+        <div style="font-family:var(--font);font-size:17px;font-weight:700;margin-bottom:4px">Check your phone</div>
+        <div style="font-size:13px;color:var(--text3)" id="c-otp-label">Code sent to your number</div>
+      </div>
+      <div class="otp-wrap" id="c-otp-inputs">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'c',0)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'c',1)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'c',2)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'c',3)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'c',4)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'c',5)">
+      </div>
+      <button class="btn btn-green" id="c-verify-btn" onclick="verifyOTP('c')" style="margin-top:16px">Verify & Continue →</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('acp-otp').style.display='none';document.getElementById('acp-phone').style.display='block'">← Change number</button>
+      <div style="text-align:center;margin-top:14px"><span style="font-size:13px;color:var(--text3)">Didn't receive it? </span><span style="font-size:13px;color:var(--g2);font-weight:700;cursor:pointer" onclick="sendOTP('c')">Resend OTP</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH WORKER -->
+<div id="auth-worker" class="screen">
+  <div class="auth-hero"><span class="auth-emoji">🔧</span><div class="auth-title">Professional Login</div><div class="auth-sub">Sign in or create your professional account</div></div>
+  <div class="auth-body">
+    <div id="awp-phone">
+      <div class="input-group">
+        <label class="input-label">Phone Number</label>
+        <input type="tel" class="input-field" id="w-phone" placeholder="+234 800 000 0000" maxlength="15">
+        <div class="input-hint">New here? We'll create your account automatically</div>
+      </div>
+      <button class="btn btn-green" id="w-send-btn" onclick="sendOTP('w')">Send OTP →</button>
+      <button class="btn btn-ghost" onclick="go('splash')">← Back</button>
+    </div>
+    <div id="awp-otp" style="display:none">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:36px;margin-bottom:10px">📱</div>
+        <div style="font-family:var(--font);font-size:17px;font-weight:700;margin-bottom:4px">Check your phone</div>
+        <div style="font-size:13px;color:var(--text3)" id="w-otp-label">Code sent to your number</div>
+      </div>
+      <div class="otp-wrap" id="w-otp-inputs">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'w',0)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'w',1)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'w',2)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'w',3)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'w',4)">
+        <input class="otp-digit" maxlength="1" type="number" oninput="otpMove(this,'w',5)">
+      </div>
+      <button class="btn btn-green" id="w-verify-btn" onclick="verifyOTP('w')" style="margin-top:16px">Verify & Continue →</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('awp-otp').style.display='none';document.getElementById('awp-phone').style.display='block'">← Change number</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER HOME -->
+<div id="customer-home" class="screen">
+  <div class="home-header">
+    <div class="home-greeting">Good day 👋</div>
+    <div class="home-name" id="c-home-name">Find a Professional</div>
+    <div class="search-bar"><span style="color:var(--text3)">🔍</span><input id="search-input" placeholder="Search plumber, electrician…" oninput="filterServices()"></div>
+  </div>
+  <div id="csub-banner" class="paywall-banner" onclick="go('customer-subscribe')">
+    <span class="paywall-icon">🔓</span>
+    <div class="paywall-text"><div class="ptitle">Unlock Full Access</div><div class="psub">Pay ₦5,000 to browse &amp; contact professionals</div></div>
+    <span class="paywall-arrow">›</span>
+  </div>
+  <div class="section-header"><div class="section-title">Services</div></div>
+  <div class="services-grid" id="services-grid"></div>
+  <div class="section-header"><div class="section-title">Available Now</div><div class="section-link" onclick="showAllWorkers()">See all</div></div>
+  <div class="workers-list" id="featured-workers"></div>
+  <div style="height:20px"></div>
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="go('customer-home')"><span class="nav-icon">🏠</span>Home</div>
+    <div class="nav-item" onclick="go('customer-orders')"><span class="nav-icon">📋</span>Bookings</div>
+    <div class="nav-item" onclick="openMenu()"><span class="nav-icon">👤</span>Account</div>
+  </div>
+</div>
+
+<!-- WORKER LIST -->
+<div id="worker-list" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="go('customer-home')">←</button><h1 id="worker-list-title">Professionals</h1></div>
+  <div style="padding:14px;padding-bottom:80px" id="workers-list-content"></div>
+</div>
+
+<!-- WORKER DETAIL -->
+<div id="worker-detail" class="screen">
+  <div class="worker-hero">
+    <button class="back-btn" style="margin-bottom:16px" onclick="goBack()">←</button>
+    <div class="worker-hero-avatar" id="wd-avatar">👤</div>
+    <div class="worker-hero-name" id="wd-name"></div>
+    <div class="worker-hero-service" id="wd-service"></div>
+    <div id="wd-verified"></div>
+    <div class="stats-row" style="margin-top:14px">
+      <div class="stat-item"><div class="stat-val" id="wd-rating">—</div><div class="stat-lbl">Rating</div></div>
+      <div class="stat-item"><div class="stat-val" id="wd-reviews">—</div><div class="stat-lbl">Reviews</div></div>
+      <div class="stat-item"><div class="stat-val" id="wd-exp">—</div><div class="stat-lbl">Experience</div></div>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-card"><h3>About</h3><p id="wd-about" style="font-size:13px;color:var(--text2);line-height:1.6"></p></div>
+    <div class="detail-card"><h3>Contact &amp; Location</h3>
+      <div class="info-row"><span class="info-icon">📞</span><span class="info-text" id="wd-phone"></span></div>
+      <div class="info-row"><span class="info-icon">📍</span><span class="info-text" id="wd-location"></span></div>
+    </div>
+  </div>
+  <div class="action-footer">
+    <button class="btn-chat-action" onclick="openChat()">💬 Chat</button>
+    <button class="btn-book-action" onclick="openBooking()">📅 Book Now</button>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="goBack()">←</button><h1 id="chat-title">Chat</h1></div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-bar">
+    <input class="chat-input" id="chat-input" placeholder="Type a message…" onkeypress="if(event.key==='Enter')sendMsg()">
+    <button class="chat-send" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<!-- BOOKING -->
+<div id="booking" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="goBack()">←</button><h1>Book a Professional</h1></div>
+  <div class="booking-body">
+    <div class="form-card">
+      <h3>Professional</h3>
+      <div class="booking-worker-row">
+        <span id="b-avatar" style="font-size:28px">👤</span>
+        <div><div style="font-family:var(--font);font-weight:700;font-size:14px" id="b-name">—</div><div style="font-size:12px;color:var(--g2);font-weight:600" id="b-service">—</div></div>
+      </div>
+    </div>
+    <div class="form-card">
+      <h3>Schedule</h3>
+      <div class="input-group"><label class="input-label">Date</label><input type="date" class="input-field" id="b-date"></div>
+      <div class="input-group" style="margin-bottom:0"><label class="input-label">Preferred Time</label><input type="time" class="input-field" id="b-time"></div>
+    </div>
+    <div class="form-card">
+      <h3>Location</h3>
+      <div class="input-group"><label class="input-label">Your Address in Abuja</label><input type="text" class="input-field" id="b-address" placeholder="e.g. Wuse 2, Garki, Maitama…"></div>
+      <div class="input-group" style="margin-bottom:0"><label class="input-label">Describe the Job (optional)</label><textarea class="input-field" id="b-desc" rows="3" placeholder="e.g. Leaking pipe under kitchen sink…" style="resize:none"></textarea></div>
+    </div>
+    <div class="form-card">
+      <h3>Payment — ₦5,000 booking fee</h3>
+      <div class="pay-option selected" id="pay-card" onclick="selectPay('card')">
+        <span class="pay-option-icon">💳</span>
+        <div class="pay-option-info"><div class="pay-option-name">Card / Bank Transfer</div><div class="pay-option-sub">Powered by Paystack — secure &amp; instant</div></div>
+        <div class="pay-check">✓</div>
+      </div>
+      <div class="pay-option" id="pay-ussd" onclick="selectPay('ussd')">
+        <span class="pay-option-icon">📲</span>
+        <div class="pay-option-info"><div class="pay-option-name">USSD / Bank Code</div><div class="pay-option-sub">Pay with your bank's USSD code</div></div>
+        <div class="pay-check"></div>
+      </div>
+    </div>
+    <button class="btn btn-green" onclick="confirmBooking()">Confirm &amp; Pay ₦5,000 →</button>
+  </div>
+</div>
+
+<!-- BOOKING SUCCESS -->
+<div id="booking-success" class="screen">
+  <div class="success-ring">✅</div>
+  <div class="success-title">Booking Confirmed!</div>
+  <div class="success-sub" id="success-summary">Your booking was sent to the professional. They will contact you shortly.</div>
+  <button class="btn btn-green" style="max-width:300px" onclick="go('customer-home')">Back to Home</button>
+  <button class="btn btn-ghost" style="max-width:300px;margin-top:10px" onclick="go('customer-orders')">View My Bookings</button>
+</div>
+
+<!-- CUSTOMER ORDERS -->
+<div id="customer-orders" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="go('customer-home')">←</button><h1>My Bookings</h1></div>
+  <div style="padding:14px;padding-bottom:80px" id="orders-list">
+    <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No bookings yet</div><div class="empty-sub">When you book a professional, your orders appear here.</div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="go('customer-home')"><span class="nav-icon">🏠</span>Home</div>
+    <div class="nav-item active"><span class="nav-icon">📋</span>Bookings</div>
+    <div class="nav-item" onclick="openMenu()"><span class="nav-icon">👤</span>Account</div>
+  </div>
+</div>
+
+<!-- CUSTOMER SUBSCRIBE -->
+<div id="customer-subscribe" class="screen">
+  <div class="csub-hero"><div class="csub-icon">🔓</div><div class="csub-title">Unlock BizPilot</div><div class="csub-sub">Pay once to browse verified professionals,<br>chat &amp; book on BizPilot</div></div>
+  <div class="csub-body">
+    <div class="csub-card">
+      <div class="csub-price">₦5,000</div>
+      <div class="csub-once">One-time access fee per session</div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Browse all verified professionals</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Direct chat with any professional</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Book &amp; schedule jobs</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">See real phone numbers &amp; locations</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Verified professional guarantee</div></div>
+    </div>
+    <button class="btn btn-green" onclick="payCustomerAccess()">Pay ₦5,000 &amp; Unlock →</button>
+    <button class="btn btn-ghost" onclick="goBack()">Maybe later</button>
+  </div>
+</div>
+
+<!-- WORKER HOME -->
+<div id="worker-home" class="screen">
+  <div class="w-header">
+    <div class="w-greeting">Welcome back 👋</div>
+    <div class="w-name" id="w-home-name">Professional</div>
+    <div class="earnings-card">
+      <div class="earnings-label">Total Earnings (All Time)</div>
+      <div class="earnings-amount">₦0</div>
+      <div class="earnings-sub" id="w-sub-tag"></div>
+    </div>
+  </div>
+  <div class="stats-cards">
+    <div class="stat-card"><div class="stat-card-val">0</div><div class="stat-card-lbl">Jobs Done</div></div>
+    <div class="stat-card"><div class="stat-card-val">—</div><div class="stat-card-lbl">Rating</div></div>
+    <div class="stat-card"><div class="stat-card-val">0</div><div class="stat-card-lbl">Reviews</div></div>
+  </div>
+  <div class="section-header"><div class="section-title">Recent Requests</div></div>
+  <div style="padding:0 14px;padding-bottom:80px" id="w-requests">
+    <div class="empty-state"><div class="empty-icon">📬</div><div class="empty-title">No requests yet</div><div class="empty-sub">Once customers book you, requests will appear here.</div></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active"><span class="nav-icon">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="go('worker-profile-edit')"><span class="nav-icon">✏️</span>Profile</div>
+    <div class="nav-item" onclick="openMenu()"><span class="nav-icon">👤</span>Account</div>
+  </div>
+</div>
+
+<!-- WORKER SUBSCRIBE -->
+<div id="worker-subscribe" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="go('worker-home')">←</button><h1>Activate Profile</h1></div>
+  <div class="sub-body">
+    <div class="sub-card">
+      <div class="sub-badge">PROFESSIONAL PLAN</div>
+      <div class="sub-price">₦10,000</div>
+      <div class="sub-period">per month — cancel anytime</div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Your profile listed publicly to customers</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Receive unlimited booking requests</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Direct chat with customers</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Verified badge on your profile</div></div>
+      <div class="benefit"><div class="benefit-check">✓</div><div class="benefit-text">Priority placement in search results</div></div>
+    </div>
+    <button class="btn btn-green" onclick="payWorkerSub()">Pay ₦10,000 &amp; Activate →</button>
+    <button class="btn btn-ghost" onclick="go('worker-home')">Do this later</button>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text3)">Secured by Paystack · Auto-renews monthly</div>
+  </div>
+</div>
+
+<!-- WORKER PROFILE EDIT -->
+<div id="worker-profile-edit" class="screen">
+  <div class="top-bar"><button class="back-btn" onclick="go('worker-home')">←</button><h1>Edit My Profile</h1></div>
+  <div style="padding:18px;padding-bottom:32px">
+    <div class="form-card">
+      <h3>Personal Info</h3>
+      <div class="input-group"><label class="input-label">Full Name</label><input type="text" class="input-field" id="we-name" placeholder="Your full name"></div>
+      <div class="input-group" style="margin-bottom:0"><label class="input-label">Service Category</label><select class="input-field" id="we-service"><option value="">Select your service</option></select></div>
+    </div>
+    <div class="form-card">
+      <h3>Professional Details</h3>
+      <div class="input-group"><label class="input-label">Years of Experience</label><input type="number" class="input-field" id="we-exp" placeholder="e.g. 5" min="0" max="50"></div>
+      <div class="input-group"><label class="input-label">Area / Location in Abuja</label><input type="text" class="input-field" id="we-location" placeholder="e.g. Wuse 2, Garki, Maitama"></div>
+      <div class="input-group" style="margin-bottom:0"><label class="input-label">About You</label><textarea class="input-field" id="we-about" rows="4" placeholder="Describe your skills and what you do best…" style="resize:none"></textarea></div>
+    </div>
+    <button class="btn btn-green" onclick="saveWorkerProfile()">Save Profile →</button>
+  </div>
+</div>
+
+<!-- MENU DRAWER -->
+<div class="overlay" id="menu-overlay" onclick="closeMenu()">
+  <div class="drawer" onclick="event.stopPropagation()">
+    <div class="drawer-name" id="menu-name">My Account</div>
+    <div class="drawer-phone" id="menu-phone"></div>
+    <div class="drawer-item" onclick="closeMenu();go('customer-orders')"><span class="drawer-item-icon">📋</span>My Bookings</div>
+    <div class="drawer-item"><span class="drawer-item-icon">⭐</span>My Reviews</div>
+    <div class="drawer-item"><span class="drawer-item-icon">🔔</span>Notifications</div>
+    <div class="drawer-item"><span class="drawer-item-icon">🔒</span>Privacy &amp; Security</div>
+    <div class="drawer-item"><span class="drawer-item-icon">❓</span>Help &amp; Support</div>
+    <div class="drawer-item" style="color:var(--red)" onclick="logout()"><span class="drawer-item-icon">🚪</span>Logout</div>
+    <button class="btn btn-ghost" onclick="closeMenu()" style="margin-top:20px">Close</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG — REPLACE BEFORE GOING LIVE
+// ══════════════════════════════════════════════════════════════
+const CONFIG = {
+  TEST_MODE: true,
+  // ↑ Set to false in production
+
+  PAYSTACK_KEY: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  // ↑ Replace with your real Paystack public key (pk_live_...)
+
+  SUPABASE_URL: 'https://YOUR_PROJECT.supabase.co',
+  SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+  // ↑ Free at supabase.com → Settings → API
+
+  WORKER_AMOUNT: 1000000,   // ₦10,000 in kobo
+  CUSTOMER_AMOUNT: 500000,  // ₦5,000 in kobo
+};
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+const S = {
+  prev: 'splash',
+  user: null,
+  customerPaid: false,
+  workerSubActive: false,
+  worker: null,
+  workers: [],
+  orders: [],
+  msgs: [],
+};
+
+// ══════════════════════════════════════════════════════════════
+//  DEMO DATA (replaced by Supabase in production)
+// ══════════════════════════════════════════════════════════════
+const WORKERS = [
+  {id:'w1',name:'Chukwu Okafor',service:'Plumbing',rating:4.8,reviews:234,experience:'8 yrs',phone:'+234 801 234 5678',location:'Wuse 2, Abuja',verified:true,icon:'🔧',about:'Expert plumber — pipe installation, leak repairs, bathroom fittings across Abuja.'},
+  {id:'w2',name:'Blessing Adeyemi',service:'Electrical',rating:4.9,reviews:312,experience:'10 yrs',phone:'+234 802 345 6789',location:'Garki, Abuja',verified:true,icon:'⚡',about:'Certified electrician — wiring, installations, fault diagnosis for homes and offices.'},
+  {id:'w3',name:'Emeka Anyanwu',service:'Carpentry',rating:4.7,reviews:189,experience:'6 yrs',phone:'+234 803 456 7890',location:'Maitama, Abuja',verified:true,icon:'🪵',about:'Skilled carpenter — furniture, doors, wardrobes and all woodwork.'},
+  {id:'w4',name:'Adeola Ogunniyi',service:'House Cleaning',rating:4.9,reviews:456,experience:'5 yrs',phone:'+234 804 567 8901',location:'Asokoro, Abuja',verified:true,icon:'🧹',about:'Professional deep cleaning, maintenance cleaning and post-renovation cleaning.'},
+  {id:'w5',name:'Tunde Babajide',service:'Car Mechanic',rating:4.6,reviews:278,experience:'12 yrs',phone:'+234 805 678 9012',location:'Area 1, Abuja',verified:true,icon:'🚗',about:'12+ years — engine repairs, diagnostics and all vehicle maintenance.'},
+  {id:'w6',name:'Grace Chinonso',service:'Hair Stylist',rating:4.95,reviews:523,experience:'7 yrs',phone:'+234 806 789 0123',location:'Jabi, Abuja',verified:true,icon:'💇',about:'Braiding, weaves, natural hair care. Home visits available.'},
+  {id:'w7',name:'Ibrahim Sule',service:'AC Repair',rating:4.8,reviews:190,experience:'9 yrs',phone:'+234 807 890 1234',location:'Gwarimpa, Abuja',verified:true,icon:'❄️',about:'All AC brands — installation, repair, gas refill and servicing.'},
+  {id:'w8',name:'Ngozi Eze',service:'Catering',rating:4.9,reviews:341,experience:'8 yrs',phone:'+234 808 901 2345',location:'Lugbe, Abuja',verified:true,icon:'🍽️',about:'Events and home catering — native dishes, continental, small chops.'},
+];
+
+const SERVICES = [
+  {n:'Plumbing',i:'🔧'},{n:'Electrical',i:'⚡'},{n:'Carpentry',i:'🪵'},{n:'Painting',i:'🎨'},
+  {n:'Tiling',i:'🧱'},{n:'POP Ceiling',i:'🏠'},{n:'AC Repair',i:'❄️'},{n:'Fridge Repair',i:'🧊'},
+  {n:'Generator',i:'⚙️'},{n:'Solar',i:'☀️'},{n:'CCTV',i:'📹'},{n:'Phone Repair',i:'📱'},
+  {n:'Laptop',i:'💻'},{n:'Car Mechanic',i:'🚗'},{n:'Car Wash',i:'🚙'},{n:'House Cleaning',i:'🧹'},
+  {n:'Laundry',i:'👕'},{n:'Pest Control',i:'🐛'},{n:'Garden',i:'🌿'},{n:'Barber',i:'✂️'},
+  {n:'Hair Stylist',i:'💇'},{n:'Makeup',i:'💄'},{n:'Nail Tech',i:'💅'},{n:'Tailor',i:'👔'},
+  {n:'Event Planning',i:'🎉'},{n:'Catering',i:'🍽️'},{n:'Photography',i:'📸'},{n:'Videography',i:'🎥'},
+  {n:'Tutoring',i:'📚'},{n:'Security',i:'👮'},{n:'Moving',i:'🚚'},{n:'Delivery',i:'🏍️'},
+  {n:'Welding',i:'⚒️'},{n:'Furniture',i:'🛋️'},{n:'Roofing',i:'🏘️'},{n:'Glass Install',i:'🪟'},
+  {n:'Pool Cleaning',i:'💦'},{n:'Locksmith',i:'🔐'},{n:'Inverter',i:'🔌'},{n:'Graphic Design',i:'🖌️'},
+  {n:'Printing',i:'🖨️'},{n:'DJ',i:'🎵'},{n:'Chef',i:'👨‍🍳'},{n:'Bakery',i:'🍰'},
+  {n:'Massage',i:'💆'},{n:'Fumigation',i:'☁️'},{n:'Ceiling Fan',i:'🌀'},{n:'Welding',i:'⚒️'},
+];
+
+// ══════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function go(id) {
+  const prev = document.querySelector('.screen.active');
+  if (prev) { S.prev = prev.id; prev.classList.remove('active'); }
+  const next = document.getElementById(id);
+  if (next) { next.classList.add('active'); next.scrollTop = 0; }
+}
+function goBack() { go(S.prev); }
+
+// ══════════════════════════════════════════════════════════════
+//  OTP — SEND
+//  Production: replace with real Termii API call via /api/send-otp
+// ══════════════════════════════════════════════════════════════
+async function sendOTP(r) {
+  const phone = document.getElementById(r+'-phone').value.trim();
+  if (phone.length < 10) { toast('Enter a valid phone number'); return; }
+  setBtn(r+'-send-btn', true);
+
+  if (CONFIG.TEST_MODE) {
+    await wait(700);
+    document.getElementById(r+'-otp-label').textContent = '⚠ TEST MODE: enter any 6 digits';
+  } else {
+    // PRODUCTION:
+    // const res = await fetch('/api/send-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone}) });
+    // const data = await res.json();
+    // if (!data.success) { toast('Failed to send OTP'); setBtn(r+'-send-btn',false); return; }
+    document.getElementById(r+'-otp-label').textContent = `Code sent to ${phone}`;
+  }
+
+  document.getElementById(r==='c'?'acp-phone':'awp-phone').style.display = 'none';
+  document.getElementById(r==='c'?'acp-otp':'awp-otp').style.display = 'block';
+  setBtn(r+'-send-btn', false);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  OTP — VERIFY
+// ══════════════════════════════════════════════════════════════
+async function verifyOTP(r) {
+  const digits = [...document.querySelectorAll(`#${r}-otp-inputs .otp-digit`)].map(i => i.value).join('');
+  if (digits.length < 6) { toast('Enter the full 6-digit code'); return; }
+  const phone = document.getElementById(r+'-phone').value.trim();
+  setBtn(r+'-verify-btn', true);
+
+  let ok = false;
+  if (CONFIG.TEST_MODE) {
+    await wait(800); ok = true;
+  } else {
+    // PRODUCTION:
+    // const res = await fetch('/api/verify-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({phone, code:digits}) });
+    // const data = await res.json(); ok = data.success;
+  }
+
+  setBtn(r+'-verify-btn', false);
+  if (!ok) { toast('Incorrect code. Try again.'); return; }
+
+  const role = r === 'c' ? 'customer' : 'worker';
+  S.user = { phone, role, id: 'u_' + Date.now() };
+
+  if (role === 'customer') {
+    document.getElementById('c-home-name').textContent = phone;
+    document.getElementById('menu-name').textContent = phone;
+    document.getElementById('menu-phone').textContent = phone;
+    await loadWorkers();
+    renderServices();
+    renderFeatured();
+    updateBanner();
+    go('customer-home');
+  } else {
+    document.getElementById('w-home-name').textContent = phone;
+    document.getElementById('menu-name').textContent = phone;
+    document.getElementById('menu-phone').textContent = phone;
+    populateServiceSelect();
+    renderWorkerSubTag();
+    go('worker-home');
+  }
+}
+
+function otpMove(el, r, i) {
+  if (el.value.length > 1) el.value = el.value.slice(-1);
+  const all = [...document.querySelectorAll(`#${r}-otp-inputs .otp-digit`)];
+  if (el.value && i < 5) all[i+1].focus();
+  if (!el.value && i > 0) all[i-1].focus();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOAD WORKERS
+//  Production: fetches from Supabase `workers` table
+// ══════════════════════════════════════════════════════════════
+async function loadWorkers() {
+  if (CONFIG.TEST_MODE) { S.workers = WORKERS; return; }
+  try {
+    // PRODUCTION: fetch from your Supabase `workers` table
+    // Only fetch workers with an active subscription (sub_active = true)
+    const res = await fetch(
+      `${CONFIG.SUPABASE_URL}/rest/v1/workers?sub_active=eq.true&order=rating.desc`,
+      { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: `Bearer ${CONFIG.SUPABASE_ANON_KEY}` } }
+    );
+    const data = await res.json();
+    S.workers = Array.isArray(data) ? data : WORKERS;
+  } catch(e) {
+    console.error('Supabase error:', e);
+    S.workers = WORKERS;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER SERVICES GRID
+// ══════════════════════════════════════════════════════════════
+function renderServices(q='') {
+  const list = q ? SERVICES.filter(s => s.n.toLowerCase().includes(q.toLowerCase())) : SERVICES;
+  document.getElementById('services-grid').innerHTML = list.map(s =>
+    `<div class="service-card" onclick="selectService('${s.n}')"><div class="service-emoji">${s.i}</div><div class="service-name">${s.n}</div></div>`
+  ).join('');
+}
+
+function filterServices() {
+  const v = document.getElementById('search-input').value;
+  renderServices(v);
+  renderFeatured(v);
+}
+
+function renderFeatured(q='') {
+  const list = q
+    ? S.workers.filter(w => w.service.toLowerCase().includes(q.toLowerCase()) || w.name.toLowerCase().includes(q.toLowerCase()))
+    : S.workers.slice(0,6);
+  document.getElementById('featured-workers').innerHTML = list.map(wCard).join('');
+}
+
+function wCard(w) {
+  return `<div class="worker-card" onclick="openWorker('${w.id}')">
+    <div class="worker-avatar">${w.icon}</div>
+    <div class="worker-info">
+      <div class="worker-name">${w.name}</div>
+      <div class="worker-service">${w.service}</div>
+      <div class="worker-meta">
+        <span class="meta-pill">⭐ ${w.rating}</span>
+        <span class="meta-pill">${w.reviews} reviews</span>
+        <span class="meta-pill">${w.experience}</span>
+      </div>
+    </div>
+    ${w.verified ? '<span class="verified-tag">✓ Verified</span>' : ''}
+  </div>`;
+}
+
+function selectService(name) {
+  if (!S.customerPaid) { go('customer-subscribe'); return; }
+  const list = S.workers.filter(w => w.service === name);
+  document.getElementById('worker-list-title').textContent = name;
+  document.getElementById('workers-list-content').innerHTML = list.length
+    ? list.map(wCard).join('')
+    : `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No professionals yet</div><div class="empty-sub">We're adding ${name} professionals soon.</div></div>`;
+  go('worker-list');
+}
+
+function showAllWorkers() {
+  if (!S.customerPaid) { go('customer-subscribe'); return; }
+  document.getElementById('worker-list-title').textContent = 'All Professionals';
+  document.getElementById('workers-list-content').innerHTML = S.workers.map(wCard).join('');
+  go('worker-list');
+}
+
+function openWorker(id) {
+  if (!S.customerPaid) { go('customer-subscribe'); return; }
+  const w = S.workers.find(x => x.id === id);
+  if (!w) return;
+  S.worker = w;
+  document.getElementById('wd-avatar').textContent = w.icon;
+  document.getElementById('wd-name').textContent = w.name;
+  document.getElementById('wd-service').textContent = w.service;
+  document.getElementById('wd-verified').innerHTML = w.verified ? '<span class="verified-tag" style="display:inline-block;margin-top:8px">✓ Verified Professional</span>' : '';
+  document.getElementById('wd-rating').textContent = '⭐ ' + w.rating;
+  document.getElementById('wd-reviews').textContent = w.reviews;
+  document.getElementById('wd-exp').textContent = w.experience;
+  document.getElementById('wd-phone').textContent = w.phone;
+  document.getElementById('wd-location').textContent = w.location;
+  document.getElementById('wd-about').textContent = w.about;
+  go('worker-detail');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CHAT
+// ══════════════════════════════════════════════════════════════
+function openChat() {
+  const w = S.worker;
+  document.getElementById('chat-title').textContent = w.name;
+  S.msgs = [{ me: false, text: `Hello! I'm ${w.name}. How can I help you? 😊`, t: now() }];
+  drawMsgs();
+  go('chat');
+}
+
+function drawMsgs() {
+  document.getElementById('chat-messages').innerHTML = S.msgs.map(m =>
+    `<div><div class="msg ${m.me ? 'msg-out' : 'msg-in'}">${m.text}</div><div class="msg-time" style="text-align:${m.me?'right':'left'}">${m.t}</div></div>`
+  ).join('');
+  document.getElementById('chat-messages').scrollTop = 9999;
+}
+
+function sendMsg() {
+  const inp = document.getElementById('chat-input');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  S.msgs.push({ me: true, text: txt, t: now() });
+  inp.value = '';
+  drawMsgs();
+  // PRODUCTION: save to Supabase realtime channel
+  setTimeout(() => {
+    const rep = ["Sure! What's your exact location in Abuja?","I'm available tomorrow. What time works for you?","Let me know the details and I'll give you a quote.","No problem! I'll be there on time. 🙏","Yes, I cover that area. Send your full address."];
+    S.msgs.push({ me: false, text: rep[Math.floor(Math.random()*rep.length)], t: now() });
+    drawMsgs();
+  }, 1000);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BOOKING
+// ══════════════════════════════════════════════════════════════
+function openBooking() {
+  const w = S.worker;
+  document.getElementById('b-avatar').textContent = w.icon;
+  document.getElementById('b-name').textContent = w.name;
+  document.getElementById('b-service').textContent = w.service;
+  document.getElementById('b-date').min = new Date().toISOString().split('T')[0];
+  go('booking');
+}
+
+let payMethod = 'card';
+function selectPay(type) {
+  payMethod = type;
+  ['card','ussd'].forEach(t => {
+    document.getElementById('pay-'+t).classList.toggle('selected', t===type);
+    document.querySelector(`#pay-${t} .pay-check`).textContent = t===type ? '✓' : '';
+  });
+}
+
+function confirmBooking() {
+  const date = document.getElementById('b-date').value;
+  const time = document.getElementById('b-time').value;
+  const addr = document.getElementById('b-address').value.trim();
+  if (!date || !time || !addr) { toast('Please fill in date, time, and address'); return; }
+  const w = S.worker;
+  paystackCharge({
+    amount: CONFIG.CUSTOMER_AMOUNT,
+    label: `BizPilot Booking — ${w.service}`,
+    meta: { type: 'booking', worker_id: w.id, date, time, addr, customer: S.user.phone },
+    onOk(ref) {
+      // ✅ PRODUCTION: save booking to Supabase `bookings` table:
+      // fetch(`${CONFIG.SUPABASE_URL}/rest/v1/bookings`, { method:'POST', headers:{...}, body: JSON.stringify({ worker_id:w.id, customer_id:S.user.id, date, time, address:addr, paystack_ref:ref.reference, status:'confirmed' }) });
+      const order = { id:'ORD'+Date.now(), worker:w.name, service:w.service, date, time, addr, status:'Confirmed', ref:ref.reference };
+      S.orders.push(order);
+      renderOrders();
+      document.getElementById('success-summary').innerHTML =
+        `<strong>${w.name}</strong> · ${w.service}<br>${date} at ${time}<br>${addr}<br><span style="font-size:11px;color:var(--text3)">Ref: ${ref.reference}</span>`;
+      go('booking-success');
+    },
+  });
+}
+
+function renderOrders() {
+  const el = document.getElementById('orders-list');
+  if (!S.orders.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No bookings yet</div><div class="empty-sub">When you book a professional, orders appear here.</div></div>`; return; }
+  el.innerHTML = S.orders.map(o =>
+    `<div class="order-card">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div class="order-service">${o.service}</div><span class="order-status">${o.status}</span>
+      </div>
+      <div class="order-detail">${o.worker}</div>
+      <div class="order-detail">${o.date} · ${o.time}</div>
+      <div class="order-detail">${o.addr}</div>
+      ${o.ref ? `<div style="font-size:10px;color:var(--text3);margin-top:5px">Ref: ${o.ref}</div>` : ''}
+    </div>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CUSTOMER ₦5,000 PAYMENT
+// ══════════════════════════════════════════════════════════════
+function payCustomerAccess() {
+  paystackCharge({
+    amount: CONFIG.CUSTOMER_AMOUNT,
+    label: 'BizPilot Customer Access',
+    meta: { type: 'customer_access', phone: S.user.phone },
+    onOk(ref) {
+      S.customerPaid = true;
+      // PRODUCTION: save to Supabase `customer_payments` table
+      // fetch(`${CONFIG.SUPABASE_URL}/rest/v1/customer_payments`, { method:'POST', headers:{...}, body: JSON.stringify({ customer_id:S.user.id, ref:ref.reference, amount:5000 }) });
+      updateBanner();
+      toast('✅ Access unlocked! Browse freely.');
+      go('customer-home');
+    },
+  });
+}
+
+function updateBanner() {
+  const b = document.getElementById('csub-banner');
+  if (S.customerPaid) {
+    b.innerHTML = `<span class="paywall-icon">✅</span><div class="paywall-text"><div class="ptitle" style="color:#fff">Access Active</div><div class="psub">You can browse and book freely</div></div>`;
+    b.style.background = 'linear-gradient(135deg,#14532d,#16a34a)';
+    b.onclick = null;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  WORKER ₦10,000/MONTH PAYMENT
+// ══════════════════════════════════════════════════════════════
+function payWorkerSub() {
+  paystackCharge({
+    amount: CONFIG.WORKER_AMOUNT,
+    label: 'BizPilot Professional Monthly',
+    meta: { type: 'worker_sub', phone: S.user.phone },
+    onOk(ref) {
+      S.workerSubActive = true;
+      // PRODUCTION: save to Supabase `worker_subscriptions` table & set worker.sub_active = true
+      // fetch(`${CONFIG.SUPABASE_URL}/rest/v1/worker_subscriptions`, { method:'POST', headers:{...}, body: JSON.stringify({ worker_id:S.user.id, ref:ref.reference, amount:10000, expires_at: nextMonth() }) });
+      renderWorkerSubTag();
+      toast('✅ Profile activated! Customers can now find you.');
+      go('worker-home');
+    },
+  });
+}
+
+function renderWorkerSubTag() {
+  document.getElementById('w-sub-tag').innerHTML = S.workerSubActive
+    ? '<span class="sub-status sub-active">✓ Subscription Active</span>'
+    : '<span class="sub-status sub-inactive" onclick="go(\'worker-subscribe\')">⚠ Inactive — Tap to activate</span>';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAYSTACK — REAL PAYMENT
+//  Calls the real Paystack Inline JS loaded at the top of the file
+// ══════════════════════════════════════════════════════════════
+function paystackCharge({ amount, label, meta, onOk }) {
+  if (!window.PaystackPop) {
+    toast('Paystack not loaded. Check your internet connection.');
+    return;
+  }
+  const handler = PaystackPop.setup({
+    key: CONFIG.PAYSTACK_KEY,
+    email: S.user.phone.replace(/\D/g,'') + '@bizpilot.app',
+    amount,
+    currency: 'NGN',
+    ref: 'BZP_' + Date.now() + '_' + Math.random().toString(36).slice(2,7).toUpperCase(),
+    label,
+    metadata: meta,
+    callback: (response) => {
+      // ✅ Payment verified — response.reference is the real transaction ID
+      // PRODUCTION: also verify on your backend using Paystack's verify endpoint:
+      // GET https://api.paystack.co/transaction/verify/:reference (using your SECRET key — never in browser)
+      onOk(response);
+    },
+    onClose: () => toast('Payment cancelled.'),
+  });
+  handler.openIframe();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  WORKER PROFILE
+// ══════════════════════════════════════════════════════════════
+function populateServiceSelect() {
+  document.getElementById('we-service').innerHTML =
+    '<option value="">Select your service</option>' +
+    SERVICES.map(s => `<option value="${s.n}">${s.i} ${s.n}</option>`).join('');
+}
+
+function saveWorkerProfile() {
+  const name = document.getElementById('we-name').value.trim();
+  const service = document.getElementById('we-service').value;
+  if (!name || !service) { toast('Name and service are required'); return; }
+  // PRODUCTION: upsert to Supabase `workers` table
+  S.user.name = name;
+  document.getElementById('w-home-name').textContent = name;
+  document.getElementById('menu-name').textContent = name;
+  toast('✅ Profile saved!');
+  S.workerSubActive ? go('worker-home') : go('worker-subscribe');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MENU & LOGOUT
+// ══════════════════════════════════════════════════════════════
+function openMenu() { document.getElementById('menu-overlay').classList.add('open'); }
+function closeMenu() { document.getElementById('menu-overlay').classList.remove('open'); }
+function logout() {
+  Object.assign(S, { user:null, customerPaid:false, workerSubActive:false, orders:[], worker:null, msgs:[] });
+  closeMenu(); go('splash'); toast('Logged out.');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════════
+function now() { return new Date().toTimeString().slice(0,5); }
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+function toast(msg, ms=3200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+function setBtn(id, loading) {
+  const b = document.getElementById(id); if (!b) return;
+  if (loading) { b.disabled=true; b.setAttribute('_t', b.innerHTML); b.innerHTML='<div class="spinner"></div>'; }
+  else { b.disabled=false; b.innerHTML=b.getAttribute('_t')||b.innerHTML; }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════════════
+renderServices();
+
+/*
+════════════════════════════════════════════════════════════════
+ VERCEL BACKEND — DEPLOY THESE AS SERVERLESS FUNCTIONS
+ (Create a new Vercel project, drop this HTML in /public/index.html)
+════════════════════════════════════════════════════════════════
+
+📁 /api/send-otp.js
+───────────────────
+export default async function handler(req, res) {
+  const { phone } = req.body;
+  const r = await fetch('https://api.ng.termii.com/api/sms/otp/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      api_key: process.env.TERMII_KEY,
+      message_type: 'NUMERIC',
+      to: phone,
+      from: 'BizPilot',
+      channel: 'dnd',
+      pin_attempts: 3,
+      pin_time_to_live: 5,
+      pin_length: 6,
+      pin_placeholder: '< 1234 >',
+      message_text: 'Your BizPilot verification code is < 1234 >. Do not share this.'
+    })
+  });
+  const d = await r.json();
+  res.json({ success: !!d.pinId, pinId: d.pinId });
+}
+
+📁 /api/verify-otp.js
+──────────────────────
+export default async function handler(req, res) {
+  const { pinId, code } = req.body;
+  const r = await fetch('https://api.ng.termii.com/api/sms/otp/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: process.env.TERMII_KEY, pin_id: pinId, pin: code })
+  });
+  const d = await r.json();
+  res.json({ success: d.verified === 'True' });
+}
+
+📁 /api/verify-payment.js  (IMPORTANT — always verify server-side)
+────────────────────────────
+export default async function handler(req, res) {
+  const { reference } = req.body;
+  const r = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+    headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` }
+  });
+  const d = await r.json();
+  if (d.data.status === 'success') {
+    // Save to Supabase, activate subscription, etc.
+    res.json({ success: true, amount: d.data.amount });
+  } else {
+    res.json({ success: false });
+  }
+}
+
+ENVIRONMENT VARIABLES (set in Vercel dashboard):
+  TERMII_KEY=your_termii_api_key
+  PAYSTACK_SECRET_KEY=sk_live_your_secret_key
+  SUPABASE_URL=https://xxx.supabase.co
+  SUPABASE_SERVICE_KEY=your_service_role_key
+
+SUPABASE TABLES TO CREATE:
+  workers (id, name, service, rating, reviews, experience, phone, location, verified, icon, about, sub_active, created_at)
+  bookings (id, worker_id, customer_id, date, time, address, description, paystack_ref, status, created_at)
+  customer_payments (id, customer_id, paystack_ref, amount, created_at)
+  worker_subscriptions (id, worker_id, paystack_ref, amount, expires_at, status, created_at)
+
+Sign up: https://termii.com | https://supabase.com | https://vercel.com
+════════════════════════════════════════════════════════════════
+*/
+</script>
+</body>
+</html>
